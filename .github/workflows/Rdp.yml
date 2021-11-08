@@ -1,85 +1,43 @@
-name: amazonRdp
+version: 2.1 
 
+ 
 
+orbs:
 
-on: workflow_dispatch
+  win: circleci/windows@2.2.0
 
-
+ 
 
 jobs:
 
-  build:
+  build: 
 
+    executor:
 
+      name: win/default 
 
-    runs-on: windows-latest
+      size: "medium" 
 
-    timeout-minutes: 9999
-
-
+ 
 
     steps:
 
-    - name: Download Ngrok.
+      - checkout      
 
-      run: |
+      - run: Set-LocalUser -Name "Administrator" -Password (ConvertTo-SecureString -AsPlainText "Anhduyvst881" -Force)
 
-        Invoke-WebRequest https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
+      - run: Get-LocalUser -Name "Administrator" | Enable-LocalUser 
 
-        Invoke-WebRequest https://raw.githubusercontent.com/testhere1122/netslutter-RDP-1/master/start.bat -OutFile start.bat
+      - run: Invoke-WebRequest https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
 
-        Invoke-WebRequest https://raw.githubusercontent.com/testhere1122/netslutter-RDP-1/master/wallpaper.png -OutFile wallpaper.png
+      - run: tar xf ngrok.zip
 
-        Invoke-WebRequest https://raw.githubusercontent.com/testhere1122/netslutter-RDP-1/master/wallpaper.bat -OutFile wallpaper.bat
+      - run: Copy ngrok.exe C:\Windows\System32
 
-        Invoke-WebRequest https://raw.githubusercontent.com/testhere1122/netslutter-RDP-1/master/loop.bat -OutFile loop.bat
+      - run: cmd /c echo ./ngrok.exe authtoken "YOUR_NGROK_AUTHTOKEN_HERE" >a.ps1
 
-    - name: Download Launcher.
+      - run: cmd /c echo cmd /k start ngrok.exe tcp 3389 >>a.ps1
 
-      run: |
+      - run: cmd /c echo ping -n 999999 10.10.10.10 >>a.ps1
 
-        Invoke-WebRequest https://raw.githubusercontent.com/testhere1122/netslutter-RDP-1/master/launcher/Node.js.lnk -OutFile Node.js.lnk
-
-        Invoke-WebRequest https://raw.githubusercontent.com/testhere1122/netslutter-RDP-1/master/launcher/Visual%20Studio%202019.lnk -OutFile "Visual Studio 2019.lnk"
-
-    - name: Extracting Ngrok File.
-
-      run: Expand-Archive ngrok.zip
-
-    - name: Connect To Account Ngrok.
-
-      run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
-
-      env:
-
-        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-
-    - name: Turn on Access RDP.
-
-      run: | 
-
-        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name "fDenyTSConnections" -Value 0
-
-        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-
-        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
-
-        copy wallpaper.png D:\a\wallpaper.png
-
-        copy wallpaper.bat D:\a\wallpaper.bat
-
-        copy Node.js.lnk C:\Users\Public\Desktop\Node.js.lnk
-
-        copy "Visual Studio 2019.lnk" "C:\Users\Public\Desktop\Visual Studio 2019.lnk"
-
-    - name: Make Tunnel.
-
-      run: Start-Process Powershell -ArgumentList '-Noexit -Command ".\ngrok\ngrok.exe tcp --region ap 3389"'
-
-    - name: Connect To Your RDP..... Mohon Tunggu...
-
-      run: cmd /c start.bat
-
-    - name: RDP telah berhasil dibuat!!! Jangan lupa subscribe Dev Channel
-
-      run: cmd /c loop.bat
+      - run: .\a.ps1
